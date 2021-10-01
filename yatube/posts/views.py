@@ -24,7 +24,7 @@ def index(request):
 
 def group_posts(request, slug):
     template = 'posts/group_list.html'
-    group = Group.objects.get(slug=slug)
+    group = get_object_or_404(Group, slug=slug)
     post_list = group.posts.all()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
@@ -40,10 +40,8 @@ def profile(request, username):
     template = 'posts/profile.html'
     author = get_object_or_404(User, username=username)
     following = False
-    if request.user.is_authenticated and (
-        request.user.follower.filter(author=author).exists()
-    ):
-        following = True
+    if request.user.is_authenticated:
+        following = request.user.follower.filter(author=author).exists()
     post_list = author.posts.all()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')

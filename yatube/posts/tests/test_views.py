@@ -65,40 +65,34 @@ class PostViewTests(TestCase):
 
     def post_exist(self, page_context):
         """Метод для проверки существования поста на страницах."""
-        clear_posts = False
         if 'page_obj' in page_context:
-            if len(page_context['page_obj']) != 0:
-                post = page_context['page_obj'][0]
-            else:
-                clear_posts = True
-                self.assertEqual(len(page_context['page_obj']), 0)
+            post = page_context['page_obj'][0]
         else:
             post = page_context['post']
-        if not clear_posts:
-            task_author = post.author
-            task_text = post.text
-            task_image = post.image
-            task_group = post.group
-            self.assertEqual(
-                task_image,
-                'posts/small.gif'
-            )
-            self.assertEqual(
-                task_author,
-                PostViewTests.post.author
-            )
-            self.assertEqual(
-                task_text,
-                PostViewTests.post.text
-            )
-            self.assertEqual(
-                task_group,
-                PostViewTests.post.group
-            )
-            self.assertEqual(
-                post.comments.last(),
-                PostViewTests.comment_post
-            )
+        task_author = post.author
+        task_text = post.text
+        task_image = post.image
+        task_group = post.group
+        self.assertEqual(
+            task_image,
+            'posts/small.gif'
+        )
+        self.assertEqual(
+            task_author,
+            PostViewTests.post.author
+        )
+        self.assertEqual(
+            task_text,
+            PostViewTests.post.text
+        )
+        self.assertEqual(
+            task_group,
+            PostViewTests.post.group
+        )
+        self.assertEqual(
+            post.comments.last(),
+            PostViewTests.comment_post
+        )
 
     def test_paginator_correct_context(self):
         """Шаблон index, group_list и profile
@@ -293,4 +287,4 @@ class PostViewTests(TestCase):
             reverse('posts:follow_index')
         )
         context_unfollow = response_unfollow.context
-        self.post_exist(context_unfollow)
+        self.assertEqual(len(context_unfollow['page_obj']), 0)
