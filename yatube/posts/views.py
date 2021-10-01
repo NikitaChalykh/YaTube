@@ -39,14 +39,11 @@ def group_posts(request, slug):
 def profile(request, username):
     template = 'posts/profile.html'
     author = get_object_or_404(User, username=username)
-    if request.user.is_authenticated:
-        data_follow = request.user.follower.filter(author=author)
-        if data_follow:
-            following = True
-        else:
-            following = False
-    else:
-        following = False
+    following = False
+    if request.user.is_authenticated and (
+        request.user.follower.filter(author=author).exists()
+    ):
+        following = True
     post_list = author.posts.all()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
@@ -126,9 +123,6 @@ def add_comment(request, post_id):
 def follow_index(request):
     template = 'posts/follow.html'
     title = 'Публикации избранных авторов'
-    # follows = request.user.follower.all()
-    # for follow in follows:
-    #     posts = posts | Post.objects.filter(author=follow.author)
     posts = Post.objects.filter(author__following__user=request.user)
     paginator = Paginator(posts, 10)
     page_number = request.GET.get('page')
@@ -143,13 +137,13 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     follow_author = get_object_or_404(User, username=username)
-    if follow_author != request.user:
-        data_follow = request.user.follower.filter(author=follow_author)
-        if not data_follow:
-            Follow.objects.create(
-                user=request.user,
-                author=follow_author
-            )
+    if follow_author != request.user and (
+        not request.user.follower.filter(author=follow_author).exists()
+    ):
+        Follow.objects.create(
+            user=request.user,
+            author=follow_author
+        )
     return redirect('posts:profile', username)
 
 
@@ -157,6 +151,6 @@ def profile_follow(request, username):
 def profile_unfollow(request, username):
     follow_author = get_object_or_404(User, username=username)
     data_follow = request.user.follower.filter(author=follow_author)
-    if data_follow:
+    if data_follow.exists():
         data_follow.delete()
     return redirect('posts:profile', username)

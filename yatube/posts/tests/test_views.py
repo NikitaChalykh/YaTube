@@ -39,16 +39,16 @@ class PostViewTests(TestCase):
             slug='tolstoi',
             description='Что-то о группе'
         )
-        cls.post_1 = Post.objects.create(
+        cls.post = Post.objects.create(
             author=cls.user,
             text='Война и мир изначально назывался «1805 год»',
             group=cls.group,
             image=uploaded
         )
-        cls.comment_post_1 = Comment.objects.create(
+        cls.comment_post = Comment.objects.create(
             author=cls.user,
             text='А мне только битвы запомнились»',
-            post=cls.post_1
+            post=cls.post
         )
 
     @classmethod
@@ -61,43 +61,49 @@ class PostViewTests(TestCase):
         """Создаем клиент зарегистрированного пользователя."""
         self.authorized_client = Client()
         self.authorized_client.force_login(PostViewTests.user)
+        cache.clear()
 
     def post_exist(self, page_context):
         """Метод для проверки существования поста на страницах."""
+        clear_posts = False
         if 'page_obj' in page_context:
-            post = page_context['page_obj'][0]
+            if len(page_context['page_obj']) != 0:
+                post = page_context['page_obj'][0]
+            else:
+                clear_posts = True
+                self.assertEqual(len(page_context['page_obj']), 0)
         else:
             post = page_context['post']
-        task_author = post.author
-        task_text = post.text
-        task_image = post.image
-        task_group = post.group
-        self.assertEqual(
-            task_image,
-            'posts/small.gif'
-        )
-        self.assertEqual(
-            task_author,
-            PostViewTests.post_1.author
-        )
-        self.assertEqual(
-            task_text,
-            PostViewTests.post_1.text
-        )
-        self.assertEqual(
-            task_group,
-            PostViewTests.post_1.group
-        )
-        self.assertEqual(
-            post.comments.last(),
-            PostViewTests.comment_post_1
-        )
+        if not clear_posts:
+            task_author = post.author
+            task_text = post.text
+            task_image = post.image
+            task_group = post.group
+            self.assertEqual(
+                task_image,
+                'posts/small.gif'
+            )
+            self.assertEqual(
+                task_author,
+                PostViewTests.post.author
+            )
+            self.assertEqual(
+                task_text,
+                PostViewTests.post.text
+            )
+            self.assertEqual(
+                task_group,
+                PostViewTests.post.group
+            )
+            self.assertEqual(
+                post.comments.last(),
+                PostViewTests.comment_post
+            )
 
     def test_paginator_correct_context(self):
         """Шаблон index, group_list и profile
         сформированы с корректным Paginator.
         """
-        cache.clear()
         paginator_objects = []
         for i in range(1, 18):
             new_post = Post(
@@ -135,7 +141,6 @@ class PostViewTests(TestCase):
 
     def test_index_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""
-        cache.clear()
         response_index = self.authorized_client.get(reverse('posts:index'))
         page_index_context = response_index.context
         self.post_exist(page_index_context)
@@ -145,7 +150,7 @@ class PostViewTests(TestCase):
         response_post_detail = self.authorized_client.get(
             reverse(
                 'posts:post_detail',
-                kwargs={'post_id': PostViewTests.post_1.pk}
+                kwargs={'post_id': PostViewTests.post.pk}
             )
         )
         page_post_detail_context = response_post_detail.context
@@ -193,7 +198,7 @@ class PostViewTests(TestCase):
         """Шаблон create_post(edit) сформирован с правильным контекстом."""
         response = self.authorized_client.get(
             reverse('posts:post_edit',
-                    kwargs={'post_id': PostViewTests.post_1.pk})
+                    kwargs={'post_id': PostViewTests.post.pk})
         )
         form_fields = {
             'text': forms.fields.CharField,
@@ -206,38 +211,46 @@ class PostViewTests(TestCase):
 
     def test_index_caches(self):
         """Тестирование кэша главной страницы."""
-        cache.clear()
-        response_1 = self.authorized_client.get(
-            reverse('posts:index')
-        )
-        response_content_1 = response_1.content
-        cache.clear()
         new_post = Post.objects.create(
             author=PostViewTests.user,
             text='Этот пост создан быть удаленным)',
             group=PostViewTests.group
         )
+        response_1 = self.authorized_client.get(
+            reverse('posts:index')
+        )
+        response_content_1 = response_1.content
+        new_post.delete()
         response_2 = self.authorized_client.get(
             reverse('posts:index')
         )
         response_content_2 = response_2.content
-        self.assertNotEqual(response_content_1, response_content_2)
-        new_post.delete()
+        self.assertEqual(response_content_1, response_content_2)
+        cache.clear()
         response_3 = self.authorized_client.get(
             reverse('posts:index')
         )
         response_content_3 = response_3.content
-        self.assertEqual(response_content_2, response_content_3)
-        cache.clear()
-        response_4 = self.authorized_client.get(
-            reverse('posts:index')
-        )
-        response_content_4 = response_4.content
-        self.assertEqual(response_content_4, response_content_1)
+        self.assertNotEqual(response_content_2, response_content_3)
 
     def test_follow(self):
-        """Тестирование подписки и отписки на пользователя."""
-        count_follow = 0
+        """Тестирование подписки на автора."""
+        count_follow = Follow.objects.count()
+        new_author = User.objects.create(username='Lermontov')
+        self.authorized_client.get(
+            reverse(
+                'posts:profile_follow',
+                kwargs={'username': new_author.username}
+            )
+        )
+        follow = Follow.objects.last()
+        self.assertEqual(Follow.objects.count(), count_follow + 1)
+        self.assertEqual(follow.author, new_author)
+        self.assertEqual(follow.user, PostViewTests.user)
+
+    def test_unfollow(self):
+        """Тестирование отписки от автора."""
+        count_follow = Follow.objects.count()
         new_author = User.objects.create(username='Lermontov')
         self.authorized_client.get(
             reverse(
@@ -246,7 +259,6 @@ class PostViewTests(TestCase):
             )
         )
         self.assertEqual(Follow.objects.count(), count_follow + 1)
-        self.assertEqual(Follow.objects.last().author, new_author)
         self.authorized_client.get(
             reverse(
                 'posts:profile_unfollow',
@@ -254,42 +266,31 @@ class PostViewTests(TestCase):
             )
         )
         self.assertEqual(Follow.objects.count(), count_follow)
-        self.assertIsNone(Follow.objects.last())
-        new_author.delete()
 
     def test_following_posts(self):
         """Тестирование появления поста автора в ленте подписчиков."""
-        new_author = User.objects.create(username='Lermontov')
-        new_post_author = Post.objects.create(
-            author=new_author,
-            text='Что тут должно быть из Лермонтова',
-        )
-        new_user = User.objects.create(username='Niko')
+        new_user = User.objects.create(username='Lermontov')
+        self.authorized_client = Client()
+        self.authorized_client.force_login(new_user)
         self.authorized_client.get(
-            reverse(
-                'posts:profile_follow',
-                kwargs={'username': new_author.username}
-            )
-        )
-        response_leo = self.authorized_client.get(
-            reverse('posts:follow_index')
-        )
-        self.assertEqual(
-            response_leo.context['page_obj'][0].text,
-            new_post_author.text
-        )
-        new_authorized_client = Client()
-        new_authorized_client.force_login(new_user)
-        new_authorized_client.get(
             reverse(
                 'posts:profile_follow',
                 kwargs={'username': PostViewTests.user.username}
             )
         )
-        response_niko = new_authorized_client.get(
+        response_follow = self.authorized_client.get(
             reverse('posts:follow_index')
         )
-        self.assertNotEqual(
-            response_niko.context['page_obj'][0].text,
-            new_post_author.text
+        context_follow = response_follow.context
+        self.post_exist(context_follow)
+        self.authorized_client.get(
+            reverse(
+                'posts:profile_unfollow',
+                kwargs={'username': PostViewTests.user.username}
+            )
         )
+        response_unfollow = self.authorized_client.get(
+            reverse('posts:follow_index')
+        )
+        context_unfollow = response_unfollow.context
+        self.post_exist(context_unfollow)
