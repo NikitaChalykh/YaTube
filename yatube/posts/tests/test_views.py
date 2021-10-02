@@ -262,28 +262,34 @@ class PostViewTests(TestCase):
         self.assertEqual(Follow.objects.count(), count_follow)
 
     def test_following_posts(self):
-        """Тестирование появления поста автора в ленте подписчиков."""
+        """Тестирование появления поста автора в ленте подписчика."""
         new_user = User.objects.create(username='Lermontov')
-        self.authorized_client = Client()
-        self.authorized_client.force_login(new_user)
-        self.authorized_client.get(
+        authorized_client = Client()
+        authorized_client.force_login(new_user)
+        authorized_client.get(
             reverse(
                 'posts:profile_follow',
                 kwargs={'username': PostViewTests.user.username}
             )
         )
-        response_follow = self.authorized_client.get(
+        response_follow = authorized_client.get(
             reverse('posts:follow_index')
         )
         context_follow = response_follow.context
         self.post_exist(context_follow)
-        self.authorized_client.get(
+
+    def test_unfollowing_posts(self):
+        """Тестирование отсутствия поста автора в ленте не подсписчика."""
+        new_user = User.objects.create(username='Lermontov')
+        authorized_client = Client()
+        authorized_client.force_login(new_user)
+        authorized_client.get(
             reverse(
                 'posts:profile_unfollow',
                 kwargs={'username': PostViewTests.user.username}
             )
         )
-        response_unfollow = self.authorized_client.get(
+        response_unfollow = authorized_client.get(
             reverse('posts:follow_index')
         )
         context_unfollow = response_unfollow.context
