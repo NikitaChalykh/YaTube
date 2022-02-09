@@ -9,6 +9,12 @@
 {% load user_filters %}
 {% block content %} 
 {% load thumbnail %}
+<style>
+  textarea {
+  width: 100%; /* Ширина поля в процентах */
+  height: 175px; /* Высота поля в пикселах */
+  }
+</style>
 <div class="container py-5">
   <div class="row justify-content-center">
     <div class="col-md-8 p-5">
@@ -30,7 +36,7 @@
           {% csrf_token %}
            
             {% for field in form %}
-            <div class="form-group row my-3 p-3">
+            <div class="form-group row my-3 p-3 textarea">
               <label for="{{ field.id_for_label }}">
                 {{ field.label }}
                 {% if field.field.required %}

@@ -3,69 +3,78 @@
 {% block content %}
 {% load thumbnail %}
 {% load user_filters %}
-<div class="row">
-  <aside class="col-12 col-md-3">
-    <ul class="list-group list-group-flush">
-      <li class="list-group-item">
-        Дата публикации: {{ post.pub_date|date:"d E Y" }}
-      </li>
-      {% if post.group %}   
+<style>
+  textarea {
+  width: 100%; /* Ширина поля в процентах */
+  height: 70px; /* Высота поля в пикселах */
+  }
+</style>
+<div class="container col-lg-9 col-sm-12">
+  <div class="row">
+    <aside class="col-12 col-md-4">
+      <ul class="list-group list-group-flush">
         <li class="list-group-item">
-          Группа: {{ post.group.title }} <br>
-          <a href="{% url 'posts:group_list' post.group.slug %}">все записи группы</a>
+          <b>Дата публикации:</b><br> {{ post.pub_date|date:"d E Y" }}
         </li>
+        {% if post.group %}
+          <li class="list-group-item">
+            <b>Группа:</b>
+            <a href="{% url 'posts:group_list' post.group.slug %}">{{ post.group.title }}</a>
+          </li>
+        {% endif %}
+        <li class="list-group-item">
+          <b>Автор:</b>
+          <a href="{% url 'posts:profile' post.author %}">{{ post.author.get_full_name }}</a>
+        </li>
+        <li class="list-group-item">
+          <b>Всего постов автора:</b> {{ post.author.posts.count }}
+        </li>
+      </ul>
+    </aside>
+    <article class="col-12 col-md-8">
+      {% thumbnail post.image "960x339" crop="center" upscale=True as im %}
+        <img class="card-img my-2" src="{{ im.url }}">
+      {% endthumbnail %}
+      <p>
+        {{ post.text|linebreaks }}
+      </p>
+      {% if post.author == user %}
+      <a href="{% url 'posts:post_edit' post.pk %}">редактировать запись</a>&nbsp;&nbsp;&nbsp;
+      <a href="{% url 'posts:post_delete' post.pk %}">удалить запись</a>
       {% endif %}
-        <li class="list-group-item">
-          Автор: {{ post.author.get_full_name }}
-        </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-        Всего постов автора:  <span >{{ post.author.posts.count }}</span>
-      </li>
-      <li class="list-group-item">
-        <a href="{% url 'posts:profile' post.author %}">
-          все посты пользователя
-        </a>
-      </li>
-    </ul>
-  </aside>
-  <article class="col-12 col-md-9">
-    {% thumbnail post.image "960x339" crop="center" upscale=True as im %}
-      <img class="card-img my-2" src="{{ im.url }}">
-    {% endthumbnail %}
-    <p>
-      {{ post.text|linebreaks }}
-    </p>
-    {% if post.author == user %} 
-    <a href="{% url 'posts:post_edit' post.pk %}">редактировать запись</a>
-    {% endif %}
-  </article>
-{% if user.is_authenticated %}
-  <div class="card my-4">
-    <h5 class="card-header">Добавить комментарий:</h5>
-    <div class="card-body">
-      <form method="post" action="{% url 'posts:add_comment' post.id %}">
-        {% csrf_token %}      
-        <div class="form-group mb-2">
-          {{ form.text|addclass:"form-control" }}
+      {% if user.is_authenticated %}
+        <div class="card my-4">
+          <h6 class="card-header">Добавить комментарий:</h6>
+          <div class="card-body">
+            <form method="post" action="{% url 'posts:add_comment' post.id %}">
+              {% csrf_token %}
+              <div class="form-group mb-4 textarea">
+                {{ form.text|addclass:"form-control" }}
+              </div>
+              <button type="submit" class="btn btn-primary">Отправить</button>
+            </form>
+          </div>
         </div>
-        <button type="submit" class="btn btn-primary">Отправить</button>
-      </form>
-    </div>
+      {% endif %}
+      {% for comment in comments %}
+        <div class="media mb-4">
+          <div class="media-body">
+            <h5 class="mt-0">
+              <a href="{% url 'posts:profile' comment.author.username %}">
+                {{ comment.author.get_full_name }}
+              </a>
+            </h5>
+              <p>
+              {{ comment.text }}
+              {% if post.author == user %}
+              <br>
+              <a href="{% url 'posts:delete_comment' comment.pk %}">удалить запись</a>
+              {% endif %}
+              {% if not forloop.last %}<hr>{% endif %}
+              </p>
+          </div>
+        </div>
+      {% endfor %}
   </div>
-{% endif %}
-{% for comment in comments %}
-  <div class="media mb-4">
-    <div class="media-body">
-      <h5 class="mt-0">
-        <a href="{% url 'posts:profile' comment.author.username %}">
-          {{ comment.author.username }}
-        </a>
-      </h5>
-        <p>
-         {{ comment.text }}
-        </p>
-      </div>
-    </div>
-{% endfor %} 
-</div> 
+</div>
 {% endblock %}

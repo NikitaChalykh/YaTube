@@ -1,4 +1,5 @@
 {% if page_obj.has_other_pages %}
+<div class="container col-9">
 <nav aria-label="Page navigation" class="my-5">
   <ul class="pagination">
     {% if page_obj.has_previous %}
@@ -34,4 +35,5 @@
     {% endif %}    
   </ul>
 </nav>
+</div>
 {% endif %}

@@ -4,26 +4,31 @@
 {% endblock %} 
 {% block content %}
 {% load thumbnail %}
-<h1>{{ group.title }}</h1>
-<p>{{ group.description|linebreaks }}</p>
-  {% for post in page_obj %}
-    <article>
-    <ul>
-    <li>
-      Автор: {{ post.author.get_full_name }}
-      <a href="{% url 'posts:profile' post.author %}">все посты пользователя</a>
-    </li>
-    <li>
-      Дата публикации: {{ post.pub_date|date:"d E Y" }}
-    </li>
-    </ul>
-    {% thumbnail post.image "960x339" crop="center" upscale=True as im %}
-      <img class="card-img my-2" src="{{ im.url }}">
-    {% endthumbnail %}
-    <p>{{ post.text|linebreaks }}</p> 
-    <a href="{% url 'posts:post_detail' post.pk %}">подробная информация </a>
-    </article>
-    {% if not forloop.last %}<hr>{% endif %}
-  {% endfor %}
-  {% include 'posts/includes/paginator.html' %}   
+<div class="container col-9">
+  <h2>{{ group.title }}</h2>
+  <h3>{{ group.description|linebreaks }}</h3>
+</div>
+<br>
+{% for post in page_obj %}
+<div class="container col-lg-9 col-sm-12">
+  <article>
+  <ul>
+  <li>
+    Автор: 
+    <a href="{% url 'posts:profile' post.author %}">{{ post.author.get_full_name }}</a>
+  </li>
+  <li>
+    Дата публикации: {{ post.pub_date|date:"d E Y" }}
+  </li>
+  </ul>
+  {% thumbnail post.image "960x339" crop="center" upscale=True as im %}
+    <img class="card-img my-2" src="{{ im.url }}">
+  {% endthumbnail %}
+  <p>{{ post.text|linebreaks }}</p> 
+  <a href="{% url 'posts:post_detail' post.pk %}">(подробная информация)</a>
+  </article>
+  {% if not forloop.last %}<hr>{% endif %}
+</div>
+{% endfor %}
+{% include 'posts/includes/paginator.html' %}   
 {% endblock %} 

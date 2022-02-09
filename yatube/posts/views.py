@@ -1,13 +1,13 @@
 from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404
-from . models import Post, Group, User, Follow
+from . models import Post, Group, User, Follow, Comment
 from . forms import PostForm, CommentForm
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.cache import cache_page
+# from django.views.decorators.cache import cache_page
 
 
-@cache_page(20, key_prefix='index_page')
+# @cache_page(20, key_prefix='index_page')
 def index(request):
     template = 'posts/index.html'
     title = 'Последние обновления на сайте'
@@ -152,3 +152,19 @@ def profile_unfollow(request, username):
     if data_follow.exists():
         data_follow.delete()
     return redirect('posts:profile', username)
+
+
+@login_required
+def post_delete(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+    if post.author == request.user:
+        post.delete()
+    return redirect('posts:profile', post.author.username)
+
+
+@login_required
+def comment_delete(request, comment_id):
+    comment = get_object_or_404(Comment, pk=comment_id)
+    if comment.author == request.user:
+        comment.delete()
+    return redirect('posts:post_detail', post_id=comment.post.pk)
