@@ -51,11 +51,13 @@ pip install -r requirements.txt
 ```
 4. Выполнить миграции:
 ```
+cd hw05_final
+
 python3 manage.py makemigrations
 
 python3 manage.py migrate
 ```
-5. Запустить проект (в тестовом режиме):
+5. Запустить проект (в режиме сервера Django):
 ```
 python3 manage.py runserver
 ```
