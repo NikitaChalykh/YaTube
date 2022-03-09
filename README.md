@@ -53,8 +53,6 @@ pip install -r requirements.txt
 ```bash
 cd hw05_final
 
-python3 manage.py makemigrations
-
 python3 manage.py migrate
 ```
 5. Запустить проект (в режиме сервера Django):
