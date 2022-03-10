@@ -17,6 +17,7 @@ YaTube
 * Python 3.8
 * Django 2.2 
 * Unittest
+* Pytest
 * SQLite3
 * CSS
 * JS
